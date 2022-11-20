@@ -1,4 +1,57 @@
-.el-block{
-    display: block;
-    width: 100%;
+@import '@/styles/sassConfig.scss';
+
+.el-block {
+  display: block;
+  width: 100%;
+}
+
+// aside
+
+#layout-aside .el-menu {
+  border-right: none;
+}
+
+aside .el-menu-item.is-active {
+  background-color: rgba(17, 135, 245, 0.5) !important;
+  color: #fff !important;
+}
+aside .el-menu-item,
+.el-sub-menu__title {
+  color: rgba(255, 255, 255, 0.7) !important;
+  &:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+aside .el-sub-menu.is-opened {
+  .el-sub-menu__title {
+    // background-color: rgba(17, 135, 245, 0.3) !important;
+  }
+}
+
+aside .el-sub-menu.is-active {
+  .el-sub-menu__title.el-tooltip__trigger {
+    background-color: rgba(17, 135, 245, 0.5) !important;
+    color: #fff !important;
+  }
+}
+
+aside .el-sub-menu__title.el-tooltip__trigger {
+  &:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+.el-menu.el-menu--popup {
+  padding: 0 !important;
+  .el-menu-item:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+  .el-menu-item.is-active {
+    background-color: rgba(17, 135, 245, 0.5) !important;
+    color: #fff !important;
+  }
 }

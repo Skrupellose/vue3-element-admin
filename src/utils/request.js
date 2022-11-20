@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 const http = axios.create({
   baseURL: process.env.VUE_APP_API,
   timeout: 5000
@@ -15,7 +16,17 @@ http.interceptors.request.use(
 
 http.interceptors.response.use(
   res => {
-    return res
+    const data = res.data
+    console.log(data)
+    if (data.resCode === 0) {
+      return data
+    } else {
+      ElMessage({
+        type: 'error',
+        message: data.message
+      })
+      return Promise.reject(data)
+    }
   },
   err => {
     return Promise.reject(err)

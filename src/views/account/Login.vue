@@ -11,7 +11,7 @@
     <div class="form-wrap">
       <transition name="slide" mode="out-in">
         <div v-if="formMode === 'login'" class="form">
-          <el-form label-position="top" :model="loginForm" :rules="validRules">
+          <el-form label-position="top" :model="loginForm" :rules="validRules" ref="login">
             <el-form-item label="用户名(邮箱)" prop="username">
               <el-input v-model="loginForm.username" clearable />
             </el-form-item>
@@ -24,19 +24,32 @@
               <el-row :gutter="10">
                 <el-col :span="14"><el-input v-model="loginForm.code" clearable /></el-col>
                 <el-col :span="10">
-                  <el-button class="el-block" @click="toGetCode">{{ validBtnText }}</el-button>
+                  <el-button
+                    class="el-block valid-btn"
+                    @click="handleGetCode('login')"
+                    :disabled="loginForm.codeBtnDisable"
+                    :loading="loginForm.codeBtnLoading"
+                  >
+                    {{ loginForm.codeBtnText }}
+                  </el-button>
                 </el-col>
               </el-row>
             </el-form-item>
           </el-form>
           <div class="form-button">
-            <el-button @click="toLogin" class="el-block">点击登录</el-button>
+            <el-button
+              @click="submitForm('login')"
+              class="el-block"
+              :disabled="loginForm.submitBtnDisable"
+            >
+              点击登录
+            </el-button>
           </div>
         </div>
         <div v-else-if="formMode === 'register'" class="form">
-          <el-form label-position="top" :model="registerForm" :rules="validRules">
+          <el-form label-position="top" :model="registerForm" :rules="validRules" ref="register">
             <el-form-item label="用户名(邮箱)" prop="username">
-              <el-input v-model="registerForm.username" />
+              <el-input v-model="registerForm.username" clearable />
             </el-form-item>
             <el-form-item label="密码" prop="passwd">
               <el-input v-model="registerForm.passwd" type="password" show-password clearable />
@@ -48,13 +61,26 @@
               <el-row :gutter="10">
                 <el-col :span="14"><el-input v-model="registerForm.code" clearable /></el-col>
                 <el-col :span="10">
-                  <el-button class="el-block" @click="toGetCode">{{ validBtnText }}</el-button>
+                  <el-button
+                    class="el-block valid-btn"
+                    @click="handleGetCode('register')"
+                    :disabled="registerForm.codeBtnDisable"
+                    :loading="registerForm.codeBtnLoading"
+                  >
+                    {{ registerForm.codeBtnText }}
+                  </el-button>
                 </el-col>
               </el-row>
             </el-form-item>
           </el-form>
           <div class="form-button">
-            <el-button class="el-block" @click="toRegiter">点击注册</el-button>
+            <el-button
+              class="el-block"
+              @click="submitForm('register')"
+              :disabled="registerForm.submitBtnDisable"
+            >
+              点击注册
+            </el-button>
           </div>
         </div>
       </transition>
@@ -62,21 +88,37 @@
   </div>
 </template>
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { validCode, validEmail, validPwd } from '@/utils/validate.js'
-import { getCode } from '@/api/common.js'
+import { getCode, login, register } from '@/api/common.js'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const { dispatch } = useStore()
+const { proxy } = getCurrentInstance()
 const loginForm = reactive({
-  username: '',
-  passwd: '',
-  code: ''
+  username: 'hel@qq.com',
+  passwd: '123456',
+  code: '',
+  codeBtnDisable: false,
+  codeBtnText: '获取验证码',
+  codeBtnLoading: false,
+  codeBtnTimer: null,
+  submitBtnDisable: true
 })
 const registerForm = reactive({
-  username: '',
+  username: 'hel@qq.com',
   passwd: '',
   confirmPwd: '',
-  code: ''
+  code: '',
+  codeBtnDisable: false,
+  codeBtnText: '获取验证码',
+  codeBtnLoading: false,
+  codeBtnTimer: null,
+  submitBtnDisable: true
 })
-const formMode = ref('login')
+let formMode = ref('login')
+
 const validEmailFn = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请输入你的邮箱'))
@@ -95,7 +137,6 @@ const validPwdFn = (rule, value, callback) => {
     callback()
   }
 }
-
 const validConfirmPwdFn = (rule, value, callback) => {
   let pwd = registerForm.passwd
   if (value === '') {
@@ -106,7 +147,6 @@ const validConfirmPwdFn = (rule, value, callback) => {
     callback()
   }
 }
-
 const validCodeFn = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请输入验证码'))
@@ -138,24 +178,134 @@ const validRules = reactive({
   ]
 })
 
-const validCodeStatus = ref(0)
-const validBtnText = computed(() => {
-  return validCodeStatus.value === 0 ? '获取验证码' : '再次发送'
-})
-async function toGetCode() {
-  try {
-    const res = await getCode()
-    console.log(res)
-  } catch (error) {
-    console.log(error)
-  }
+const submitForm = type => {
+  proxy.$refs[type].validate(valid => {
+    if (valid) {
+      if (type === 'register') {
+        toRegiter()
+      } else {
+        toLogin()
+      }
+    } else {
+      ElMessage('校验失败')
+    }
+  })
 }
 
-async function toLogin() {}
+const handleGetCode = async type => {
+  let form
+  if (type === 'register') {
+    form = registerForm
+  } else if (type === 'login') {
+    form = loginForm
+  }
+  const { username } = form
+  if (!validEmail(username)) {
+    ElMessage({
+      message: '用户名校验失败'
+    })
+    return
+  }
+  form.codeBtnText = '发送中'
+  form.codeBtnLoading = true
+  const res = await getCode({
+    username,
+    module: type
+  }).catch(err => {
+    console.log(err)
+    form.codeBtnText = '获取验证码'
+    form.codeBtnLoading = false
+  })
+  const { message, resCode } = res
+  form.submitBtnDisable = false
+  ElMessage({
+    message: message,
+    type: resCode === 0 ? 'success' : 'warning'
+  })
+  countDown(30, form)
+}
+
+const countDown = (time, form) => {
+  let coolDownTime = time || 60
+  form.codeBtnLoading = false
+  form.codeBtnDisable = true
+  form.codeBtnText = `倒计时：${coolDownTime}秒`
+  if (form.codeBtnTimer) {
+    clearInterval(form.codeBtnTimer)
+  }
+  form.codeBtnTimer = setInterval(() => {
+    coolDownTime--
+    form.codeBtnText = `倒计时：${coolDownTime}秒`
+    if (coolDownTime <= 0) {
+      form.codeBtnDisable = false
+      form.codeBtnText = '重新获取'
+      clearInterval(form.codeBtnTimer)
+    }
+  }, 1000)
+}
+
+const toLogin = () => {
+  const data = {
+    username: loginForm.username,
+    password: loginForm.passwd,
+    code: loginForm.code
+  }
+  dispatch('app/loginAction', data)
+    .then(res => {
+      ElMessage({
+        message: res.message,
+        type: 'success'
+      })
+      resetForm('login')
+      router.push({ path: '/console' })
+    })
+    .catch(err => {
+      ElMessage({
+        message: err.message,
+        type: 'warning'
+      })
+    })
+}
 
 const toRegiter = () => {
-  console.log('register')
+  register({
+    username: registerForm.username,
+    password: registerForm.passwd,
+    code: registerForm.code
+  })
+    .then(res => {
+      console.log(res)
+      ElMessage({
+        message: '注册成功',
+        type: 'success'
+      })
+      resetForm('register')
+    })
+    .catch(err => {
+      console.log(err)
+    })
 }
+
+const resetForm = type => {
+  if (type === 'register') {
+    proxy.$refs.register.resetFields()
+    formMode.value = 'login'
+    registerForm.codeBtnText = '获取验证码'
+    registerForm.codeBtnTimer && clearInterval(registerForm.codeBtnTimer)
+    registerForm.codeBtnDisable = true
+    registerForm.codeBtnLoading = false
+  } else if (type === 'login') {
+    proxy.$refs.login.resetFields()
+    loginForm.codeBtnText = '获取验证码'
+    loginForm.codeBtnTimer && clearInterval(registerForm.codeBtnTimer)
+    loginForm.codeBtnDisable = true
+    loginForm.codeBtnLoading = false
+  }
+}
+onBeforeUnmount(() => {
+  clearInterval(registerForm.codeBtnTimer)
+  clearInterval(loginForm.codeBtnTimer)
+})
 </script>
 <style lang="scss" scoped>
 #login {
@@ -189,5 +339,8 @@ const toRegiter = () => {
   :deep().el-form-item__content {
     display: block;
   }
+}
+.valid-btn {
+  margin-top: 1px;
 }
 </style>

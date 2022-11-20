@@ -7,3 +7,19 @@ export function getCode(data) {
     data
   })
 }
+
+export function register(data) {
+  return http.request({
+    method: 'POST',
+    url: '/register/',
+    data
+  })
+}
+
+export function login(data) {
+  return http.request({
+    method: 'POST',
+    url: '/login/',
+    data
+  })
+}
