@@ -1,5 +1,7 @@
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import cookie from '@/utils/cookie'
+import router from '@/router'
+const { getToken, getUsername, removeToken, removeUsername } = cookie
 const http = axios.create({
   baseURL: process.env.VUE_APP_API,
   timeout: 5000
@@ -7,6 +9,10 @@ const http = axios.create({
 
 http.interceptors.request.use(
   config => {
+    const token = getToken()
+    const username = getUsername()
+    token ? (config.headers['Token'] = token) : ''
+    username ? (config.headers['Username'] = username) : ''
     return config
   },
   err => {
@@ -29,6 +35,12 @@ http.interceptors.response.use(
     }
   },
   err => {
+    console.log(err)
+    if (err.response.data.resCode === 1010) {
+      router.replace({ name: 'Login' })
+      removeToken()
+      removeUsername()
+    }
     return Promise.reject(err)
   }
 )

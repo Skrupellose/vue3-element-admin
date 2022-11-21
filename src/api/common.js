@@ -23,3 +23,11 @@ export function login(data) {
     data
   })
 }
+
+export function logout(data) {
+  return http.request({
+    method: 'POST',
+    url: '/logout/',
+    data
+  })
+}

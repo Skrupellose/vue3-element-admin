@@ -1,6 +1,7 @@
 import storge from '@u/storge'
 import cookie from '@u/cookie'
-import { login } from '@a/common'
+import { login, logout } from '@a/common'
+// const { getToken, removeToken, getUsername, removeUsername } = cookie
 const state = {
   collapse: storge.getSession('collapse') || false,
   token: cookie.getToken() || '',
@@ -9,6 +10,12 @@ const state = {
 const getters = {
   getCollapseStatus(state) {
     return state.collapse
+  },
+  getUsername(state) {
+    return state.username
+  },
+  getToken(state) {
+    return state.token
   }
 }
 const mutations = {
@@ -38,6 +45,19 @@ const actions = {
         .catch(err => {
           reject(err)
         })
+    })
+  },
+  logoutAction(ctx) {
+    return new Promise((resolve, reject) => {
+      logout()
+        .then(res => {
+          cookie.removeToken()
+          cookie.removeUsername()
+          ctx.commit('SET_TOKEN', '')
+          ctx.commit('SET_USERNAME', '')
+          resolve(res)
+        })
+        .catch(err => reject(err))
     })
   }
 }

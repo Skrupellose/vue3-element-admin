@@ -11,10 +11,10 @@
       <div class="user-info">
         <div class="face-info">
           <img src="@/assets/my-logo.png" alt="" />
-          <span class="account">admin</span>
+          <span class="account">{{ username }}</span>
         </div>
         <div class="setting">
-          <span class="logout">
+          <span class="logout" @click="logout">
             <svg-icon svgName="logout" svgClass="icon-menu-svg"></svg-icon>
           </span>
         </div>
@@ -25,10 +25,39 @@
 <script setup>
 import { computed } from 'vue'
 import { useStore } from 'vuex'
-const { commit, getters } = useStore()
+import { useRouter } from 'vue-router'
+const { replace } = useRouter()
+const { commit, getters, dispatch } = useStore()
 const isCollapse = computed(() => getters['app/getCollapseStatus'])
+const username = computed(() => getters['app/getUsername'])
 const changeCollapse = () => {
   commit('app/SET_COLLAPSE')
+}
+const logout = () => {
+  ElMessageBox.confirm('确认退出？', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+    .then(() => {
+      dispatch('app/logoutAction')
+        .then(res => {
+          ElMessage({
+            message: res.message,
+            type: 'success'
+          })
+          replace({ name: 'Login' })
+        })
+        .catch(err => {
+          ElMessage({
+            message: err.response.data.message || err.message,
+            type: 'warning'
+          })
+        })
+    })
+    .catch(() => {
+      console.log('取消')
+    })
 }
 </script>
 <style lang="scss" scoped>
