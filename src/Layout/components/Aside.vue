@@ -28,7 +28,7 @@
             <span>{{ item.meta.title }}</span>
           </template>
           <template v-for="subitem in item.children" :key="subitem.path">
-            <el-menu-item :index="subitem.path">
+            <el-menu-item v-if="!subitem.meta.hidden" :index="subitem.path">
               <svg-icon :svgName="subitem.meta.icon" svgClass="aside-menu-svg"></svg-icon>
               <template #title>
                 {{ subitem.meta.title }}

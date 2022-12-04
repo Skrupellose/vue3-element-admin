@@ -40,5 +40,6 @@ const asideWidth = computed(() => {
 }
 #layout-main {
   background-color: #ecf5ff;
+  height: 100%;
 }
 </style>

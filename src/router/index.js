@@ -62,6 +62,15 @@ const routes = [
           icon: 'info-category'
         },
         component: () => import('@/views/info/infoCategory/index.vue')
+      },
+      {
+        path: '/infoDetails',
+        name: 'InfoDetails',
+        meta: {
+          title: '信息详情',
+          hidden: true
+        },
+        component: () => import('@/views/info/infoDetails/index.vue')
       }
     ]
   },
