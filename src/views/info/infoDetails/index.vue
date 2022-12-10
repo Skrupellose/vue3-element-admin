@@ -102,7 +102,9 @@ onBeforeMount(() => {
     cursor: pointer;
   }
   .icon-plus {
-    // display: block;
+    @include flex();
+    width: 150px;
+    height: 150px;
     font-size: 32px;
   }
 }
