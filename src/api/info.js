@@ -47,3 +47,11 @@ export function uploadFile(data = {}) {
     data
   })
 }
+
+export function createCategoryInfo(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/add/',
+    data
+  })
+}
