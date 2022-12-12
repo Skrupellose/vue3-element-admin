@@ -66,6 +66,7 @@ import {
   categoryDel
 } from '@a/info.js'
 console.log(getCurrentInstance())
+const { proxy } = getCurrentInstance()
 const cateGoryTree = ref(null)
 const infoData = reactive({
   data: [],
@@ -168,7 +169,7 @@ const handleFirstCategoryAdd = () => {
       })
       formData.buttonIsLoading = false
     })
-    .catch(err => {
+    .catch(() => {
       formData.buttonIsLoading = false
     })
 }
@@ -202,33 +203,28 @@ const handleChildCategoryAdd = () => {
       // handleGetAllCategory()
       cateGoryTree.value.append(res.data, formData.parentCategoryData)
     })
-    .catch(err => {
+    .catch(() => {
       formData.buttonIsLoading = false
     })
 }
 const handleCategoryDel = data => {
   const { id } = data
-  ElMessageBox.confirm('确定删除此分类？', '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    categoryDel({
-      categoryId: id
-    })
-      .then(res => {
-        ElMessage({
-          type: 'success',
-          message: res.message
+  proxy.delConfirm({
+    fn() {
+      return new Promise((resolve, reject) => {
+        categoryDel({
+          categoryId: id
         })
-        cateGoryTree.value.remove(data)
+          .then(res => {
+            resolve(res)
+            ElMessage.success(res.message)
+            cateGoryTree.value.remove(data)
+          })
+          .catch(err => {
+            reject(err)
+          })
       })
-      .catch(err => {
-        ElMessage({
-          type: 'info',
-          message: '删除失败'
-        })
-      })
+    }
   })
 }
 const handleCategoryEdit = val => {

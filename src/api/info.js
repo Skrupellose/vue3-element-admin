@@ -55,3 +55,27 @@ export function createCategoryInfo(data = {}) {
     data
   })
 }
+
+export function getInfoList(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/getList/',
+    data
+  })
+}
+
+export function changeInfoStatus(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/status/',
+    data
+  })
+}
+
+export function delInfo(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/delete/',
+    data
+  })
+}

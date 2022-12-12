@@ -7,6 +7,7 @@ import './router/permit'
 import store from './store'
 import svgIcon from './components/svgIcon'
 import '@/components/svgIcon/svg.js'
+import Global from '@u/global'
 const app = createApp(App)
 app.config.globalProperties.$axios = axios
-app.use(store).use(router).component('svg-icon', svgIcon).mount('#app')
+app.use(store).use(router).use(Global).component('svg-icon', svgIcon).mount('#app')

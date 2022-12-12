@@ -16,7 +16,6 @@
         action="#"
         :http-request="handleUpload"
         :show-file-list="false"
-        :on-success="handleOnSuccess"
         :before-upload="handleBeforeUpload"
       >
         <img
