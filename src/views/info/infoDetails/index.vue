@@ -50,20 +50,22 @@
 </template>
 <script setup>
 import dayjs from 'dayjs'
-import { uploadFile, createCategoryInfo } from '@a/info.js'
+import { uploadFile, createCategoryInfo, getInfoDetail, editInfoDetail } from '@a/info.js'
 import { reactive, ref, onMounted, onBeforeMount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { categoryHook } from '@/views/hook/infoHook'
 import WangEditer from 'wangeditor'
 const { go } = useRouter()
+const { query } = useRoute()
 const { categoryOpt, handleGetCategoryAll } = categoryHook()
 const infoData = reactive({
   cascaderProps: {
     label: 'category_name',
     value: 'id'
   },
+  paramsID: query.id,
   formField: {
-    category: '',
+    category: [],
     title: '',
     date: '',
     imageUrl: '',
@@ -146,32 +148,86 @@ const handleUpload = params => {
 const handleSubmitForm = () => {
   form.value.validate(valid => {
     if (valid) {
-      const formData = JSON.parse(JSON.stringify(infoData.formField))
-      formData.category = formData.category[formData.category.length - 1]
-      formData.date = dayjs(formData.date).format('YYYY-MM-DD HH:mm:ss')
-      createCategoryInfo({
-        image_url: formData.imageUrl,
-        category_id: formData.category,
-        title: formData.title,
-        create_date: formData.date,
-        content: formData.content,
-        status: formData.public
-      })
-        .then(res => {
-          console.log(res)
-          ElMessage.success(res.message)
-          go(-1)
-        })
-        .catch(err => {
-          console.log(err)
-        })
+      if (infoData.paramsID) {
+        editInfo()
+      } else {
+        addInfo()
+      }
     } else {
       return
     }
   })
 }
+
+const addInfo = () => {
+  const formData = JSON.parse(JSON.stringify(infoData.formField))
+  formData.category = formData.category[formData.category.length - 1]
+  formData.date = dayjs(formData.date).format('YYYY-MM-DD HH:mm:ss')
+  createCategoryInfo({
+    image_url: formData.imageUrl,
+    category_id: formData.category,
+    title: formData.title,
+    create_date: formData.date,
+    content: formData.content,
+    status: formData.public
+  })
+    .then(res => {
+      console.log(res)
+      ElMessage.success(res.message)
+      go(-1)
+    })
+    .catch(err => {
+      console.log(err)
+    })
+}
+
+const editInfo = () => {
+  const formData = JSON.parse(JSON.stringify(infoData.formField))
+  formData.category =
+    typeof formData.category === 'string'
+      ? formData.category
+      : formData.category[formData.category.length - 1]
+  formData.date = dayjs(formData.date).format('YYYY-MM-DD HH:mm:ss')
+  editInfoDetail({
+    image_url: formData.imageUrl,
+    category_id: formData.category,
+    title: formData.title,
+    create_date: formData.date,
+    content: formData.content,
+    status: formData.public,
+    id: infoData.paramsID + 0
+  })
+    .then(res => {
+      console.log(res)
+      ElMessage.success(res.message)
+      go(-1)
+    })
+    .catch(err => {
+      console.log(err)
+    })
+}
+
+const handleGetInfoDetail = id => {
+  getInfoDetail(id)
+    .then(res => {
+      const { title, content, image_url, status, create_date, category_id } = res.data
+      infoData.formField.title = title
+      infoData.formField.imageUrl = image_url
+      infoData.formField.public = status
+      infoData.formField.date = create_date
+      infoData.formField.category = category_id
+      editorInstance.txt.html(content)
+    })
+    .catch(err => {
+      console.log(err)
+    })
+}
 onBeforeMount(() => {
   handleGetCategoryAll()
+  infoData.paramsID &&
+    handleGetInfoDetail({
+      id: infoData.paramsID
+    })
 })
 onMounted(() => {
   editorInstance = new WangEditer(editor.value)

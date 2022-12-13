@@ -79,3 +79,19 @@ export function delInfo(data = {}) {
     data
   })
 }
+
+export function getInfoDetail(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/detailed/',
+    data
+  })
+}
+
+export function editInfoDetail(data = {}) {
+  return http.request({
+    method: 'POST',
+    url: '/news/editInfo/',
+    data
+  })
+}

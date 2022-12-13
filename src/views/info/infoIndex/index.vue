@@ -3,16 +3,27 @@
     <el-col :span="22">
       <el-form :inline="true" label-width="auto">
         <el-form-item label="类别">
-          <el-select placeholder="请选择" class="w-100"></el-select>
+          <el-cascader
+            v-model="filterData.category"
+            :options="categoryOpt.list"
+            :props="filterData.cascaderProps"
+          />
         </el-form-item>
         <el-form-item label="关键字">
-          <el-select placeholder="请选择" class="w-100"></el-select>
+          <el-select placeholder="请选择" class="w-100" v-model="filterData.keywords">
+            <el-option
+              v-for="item in filterData.keywordsOpt"
+              :key="item.val"
+              :value="item.val"
+              :label="item.label"
+            ></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="输入关键字">
-          <el-input class="w-180" />
+          <el-input class="w-180" v-model="filterData.searchText" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary">搜索</el-button>
+          <el-button type="primary" @click="handleGetInfoList">搜索</el-button>
         </el-form-item>
       </el-form>
     </el-col>
@@ -45,7 +56,9 @@
     </el-table-column>
     <el-table-column property="handle" label="操作" min-width="120">
       <template #default="scope">
-        <el-button type="primary" size="small">编辑</el-button>
+        <el-button type="primary" size="small" @click="handleEditInfo(scope.row.id)">
+          编辑
+        </el-button>
         <el-button type="danger" size="small" @click="handleDelInfo(scope.row.id)">删除</el-button>
       </template>
     </el-table-column>
@@ -82,10 +95,24 @@
 import { reactive, onBeforeMount, ref, getCurrentInstance } from 'vue'
 import { getInfoList, changeInfoStatus, delInfo } from '@a/info.js'
 import { formatDate } from '@u/date.js'
+import { categoryHook } from '@/views/hook/infoHook'
+import { useRouter } from 'vue-router'
+const { push } = useRouter()
+const { categoryOpt, handleGetCategoryAll } = categoryHook()
 const { proxy } = getCurrentInstance()
-// const topMenu = reactive({
-//   infoCategory: ''
-// })
+const filterData = reactive({
+  cascaderProps: {
+    label: 'category_name',
+    value: 'id'
+  },
+  category: [],
+  keywordsOpt: [
+    { label: 'ID', val: 'id' },
+    { label: '标题', val: 'title' }
+  ],
+  keywords: '',
+  searchText: ''
+})
 const paginationData = reactive({
   currentPage: 1,
   small: false,
@@ -120,7 +147,11 @@ const handleCurrentChange = val => {
 const handleGetInfoList = () => {
   getInfoList({
     pageNumber: paginationData.currentPage,
-    pageSize: paginationData.pageSize
+    pageSize: paginationData.pageSize,
+    title: filterData.searchText && filterData.keywords === 'title' ? filterData.searchText : '',
+    id: filterData.searchText && filterData.keywords === 'id' ? filterData.searchText : '',
+    category_id:
+      filterData.category.length > 0 ? filterData.category[filterData.category.length - 1] : ''
   })
     .then(res => {
       console.log(res)
@@ -175,9 +206,16 @@ const handleDelInfo = id => {
   })
 }
 
+const handleEditInfo = id => {
+  push({
+    path: '/infoDetails',
+    query: { id }
+  })
+}
 const toFormat = row => formatDate({ value: row.createDate * 1000 })
 onBeforeMount(() => {
   handleGetInfoList()
+  handleGetCategoryAll()
 })
 </script>
 <style lang="scss"></style>
