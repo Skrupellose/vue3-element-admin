@@ -24,6 +24,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleGetInfoList">搜索</el-button>
+          <el-button type="danger" @click="handleGetInfoList('reset')">重置</el-button>
         </el-form-item>
       </el-form>
     </el-col>
@@ -33,73 +34,32 @@
       </router-link>
     </el-col>
   </el-row>
-
-  <el-table
-    :border="true"
+  <MyTable
     ref="table"
-    :data="tableData"
-    style="width: 100%"
-    @selection-change="handleSelectionChange"
+    :tableHeader="tableProps.tableHeader"
+    :border="true"
+    :pageData="tableProps.pageData"
+    :config="tableProps.config"
+    :request="tableProps.request"
+    :delete="tableProps.delete"
+    @onLoad="handleOnLoad"
   >
-    <el-table-column type="selection" min-width="55" />
-    <el-table-column property="title" label="标题" min-width="120" />
-    <el-table-column property="category_name" label="类别" min-width="300" />
-    <el-table-column property="createDate" label="日期" min-width="160" :formatter="toFormat" />
-    <el-table-column property="status" label="状态" min-width="100">
-      <template #default="scope">
-        <el-switch
-          v-model="scope.row.status"
-          @change="handleChangeInfoStatus($event, scope.row)"
-          :loading="scope.row.loading"
-        ></el-switch>
-      </template>
-    </el-table-column>
-    <el-table-column property="handle" label="操作" min-width="120">
-      <template #default="scope">
-        <el-button type="primary" size="small" @click="handleEditInfo(scope.row.id)">
-          编辑
-        </el-button>
-        <el-button type="danger" size="small" @click="handleDelInfo(scope.row.id)">删除</el-button>
-      </template>
-    </el-table-column>
-  </el-table>
-
-  <el-row class="mt-30">
-    <el-col :span="6">
-      <el-button
-        type="danger"
-        :disabled="selectData ? false : true"
-        @click="handleDelInfo(selectData)"
-      >
-        批量删除
+    <template #operation="slotData">
+      <el-button type="primary" size="small" @click="handleEditInfo(slotData.data.id)">
+        编辑
       </el-button>
-    </el-col>
-    <el-col :span="18">
-      <el-pagination
-        class="float-r"
-        :current-page="paginationData.currentPage"
-        :page-size="paginationData.pageSize"
-        :page-sizes="paginationData.pageSizes"
-        :small="paginationData.small"
-        :disabled="paginationData.disabled"
-        :background="paginationData.background"
-        layout="total, sizes, prev, pager, next,jumper"
-        :total="paginationData.total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      ></el-pagination>
-    </el-col>
-  </el-row>
+    </template>
+  </MyTable>
 </template>
 <script setup>
-import { reactive, onBeforeMount, ref, getCurrentInstance } from 'vue'
-import { getInfoList, changeInfoStatus, delInfo } from '@a/info.js'
+import { reactive, onBeforeMount, ref } from 'vue'
 import { formatDate } from '@u/date.js'
 import { categoryHook } from '@/views/hook/infoHook'
 import { useRouter } from 'vue-router'
+import MyTable from '@/components/table'
+const table = ref()
 const { push } = useRouter()
 const { categoryOpt, handleGetCategoryAll } = categoryHook()
-const { proxy } = getCurrentInstance()
 const filterData = reactive({
   cascaderProps: {
     label: 'category_name',
@@ -113,97 +73,74 @@ const filterData = reactive({
   keywords: '',
   searchText: ''
 })
-const paginationData = reactive({
-  currentPage: 1,
-  small: false,
-  disabled: false,
-  background: false,
-  pageSize: 10,
-  pageSizes: [1, 5, 10],
-  total: 0
-})
-const tableData = reactive([])
-const selectData = ref('')
-const handleSelectionChange = val => {
-  // console.log(val)
-  const listIDs = val.map(item => item.id).join()
-  selectData.value = listIDs
-  console.log(listIDs)
-}
 
-const handleSizeChange = val => {
-  console.log(`${val} items per page`)
-  paginationData.pageSize = val
-  paginationData.currentPage = 1
-  handleGetInfoList()
-}
-
-const handleCurrentChange = val => {
-  console.log(`current page: ${val}`)
-  paginationData.currentPage = val
-  handleGetInfoList()
-}
-
-const handleGetInfoList = () => {
-  getInfoList({
-    pageNumber: paginationData.currentPage,
-    pageSize: paginationData.pageSize,
-    title: filterData.searchText && filterData.keywords === 'title' ? filterData.searchText : '',
-    id: filterData.searchText && filterData.keywords === 'id' ? filterData.searchText : '',
-    category_id:
-      filterData.category.length > 0 ? filterData.category[filterData.category.length - 1] : ''
-  })
-    .then(res => {
-      console.log(res)
-      const { current_page, data, total } = res.data
-      paginationData.currentPage = current_page
-      paginationData.total = total
-      tableData.splice(0)
-      data.forEach(item => {
-        tableData.push(item)
-      })
-    })
-    .catch(err => {
-      console.log(err)
-    })
-}
-
-const handleChangeInfoStatus = (val, row) => {
-  row.loading = true
-  row.status = !row.status
-  changeInfoStatus({
-    id: row.id,
-    status: val
-  })
-    .then(res => {
-      ElMessage.success(res.message)
-      row.status = val
-      row.loading = !row.loading
-    })
-    .catch(err => {
-      console.log(err)
-      row.loading = !row.loading
-    })
-}
-
-const handleDelInfo = id => {
-  proxy.delConfirm({
-    fn() {
-      return new Promise((resolve, reject) => {
-        delInfo({
-          id
-        })
-          .then(res => {
-            resolve(res)
-            ElMessage.success(res.message)
-            handleGetInfoList()
-          })
-          .catch(err => {
-            reject(err)
-          })
-      })
+const tableProps = reactive({
+  tableHeader: [
+    {
+      prop: 'title',
+      label: '标题',
+      widthType: 'min-width',
+      width: 120
+    },
+    {
+      prop: 'category_name',
+      label: '分类',
+      widthType: 'min-width',
+      width: 300
+    },
+    {
+      prop: 'createDate',
+      label: '日期',
+      type: 'function',
+      widthType: 'min-width',
+      width: 160,
+      callback: row => formatDate({ value: row.createDate * 1000 })
+    },
+    {
+      prop: 'status',
+      label: '状态',
+      type: 'switch',
+      url: 'info',
+      widthType: 'min-width',
+      width: 100
+    },
+    {
+      label: '操作',
+      type: 'slot',
+      slotName: 'operation',
+      widthType: 'min-width',
+      delete: true,
+      width: 150,
+      url: 'info'
     }
-  })
+  ],
+  pageData: {
+    currentPage: 1,
+    small: false,
+    disabled: false,
+    background: false,
+    pageSize: 5,
+    pageSizes: [1, 2, 3, 4, 5],
+    total: 0
+  },
+  config: {
+    selected: true,
+    batch_del: true,
+    pagination: true
+  },
+  request: {
+    url: 'info',
+    data: {
+      pageNumber: 1,
+      pageSize: 5
+    }
+  },
+  delete: {
+    url: 'info'
+  }
+})
+const handleOnLoad = res => {
+  console.log('onload', res)
 }
 
 const handleEditInfo = id => {
@@ -212,9 +149,25 @@ const handleEditInfo = id => {
     query: { id }
   })
 }
-const toFormat = row => formatDate({ value: row.createDate * 1000 })
+
+const handleGetInfoList = val => {
+  if (val === 'reset') {
+    initFilter()
+  }
+  table.value.handleRequestData({
+    title: filterData.searchText && filterData.keywords === 'title' ? filterData.searchText : '',
+    id: filterData.searchText && filterData.keywords === 'id' ? filterData.searchText : '',
+    category_id:
+      filterData.category.length > 0 ? filterData.category[filterData.category.length - 1] : ''
+  })
+}
+
+const initFilter = () => {
+  filterData.category = []
+  filterData.keywords = ''
+  filterData.searchText = ''
+}
 onBeforeMount(() => {
-  handleGetInfoList()
   handleGetCategoryAll()
 })
 </script>

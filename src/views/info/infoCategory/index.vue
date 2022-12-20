@@ -75,6 +75,7 @@ const infoData = reactive({
     label: 'category_name'
   }
 })
+
 const formConfig = reactive({
   type: 'parentNodeAdd',
   parentNodeAdd: {

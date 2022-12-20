@@ -31,3 +31,11 @@ export function logout(data = {}) {
     data
   })
 }
+
+export function tableData(params = {}) {
+  return http.request({
+    method: params.method,
+    url: params.url,
+    data: params.data
+  })
+}
